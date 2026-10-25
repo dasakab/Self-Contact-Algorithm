@@ -1,0 +1,93 @@
+[
+  {
+    "file": "main.f",
+    "original_sha256": "7f3fe4ce6da57606e57303f46fb89f5aa2f6a18333eeacc267e7a701c5d39589",
+    "package_sha256": "7f3fe4ce6da57606e57303f46fb89f5aa2f6a18333eeacc267e7a701c5d39589",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "read.f",
+    "original_sha256": "020e368711e9e5aba2a401375b9127639346bd7343bbeedb8bb10bc07b05b6ce",
+    "package_sha256": "782a0b391c2c86093f2f769ade2f1ae29c6da7dc149ae2620c3b5a230969dae2",
+    "changed": true,
+    "patch_lines": 10
+  },
+  {
+    "file": "contact2.f",
+    "original_sha256": "75e01dfd01088c016613501d3a25b05506e14f92939cbd7a13235e17a967a44a",
+    "package_sha256": "51e2c98df4783c912602914acbc9825be6c5b4733444a032cc2f257a407128d6",
+    "changed": true,
+    "patch_lines": 764
+  },
+  {
+    "file": "eigensolve.f",
+    "original_sha256": "68d919b9e782aef6251a5f2b51f52f0fbb5ea2a101520b9bbf7e0390612cc67d",
+    "package_sha256": "68d919b9e782aef6251a5f2b51f52f0fbb5ea2a101520b9bbf7e0390612cc67d",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "eulerforint.f",
+    "original_sha256": "406eb6f5b2f142d2d0cce0dae3c24305d6b9bd63a2dff94365e3620b9600cafd",
+    "package_sha256": "406eb6f5b2f142d2d0cce0dae3c24305d6b9bd63a2dff94365e3620b9600cafd",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "force.f",
+    "original_sha256": "58d5ac9aabb53bdacf464046f4e0a0a96e618b43e5815bf0a5707937813ac152",
+    "package_sha256": "58d5ac9aabb53bdacf464046f4e0a0a96e618b43e5815bf0a5707937813ac152",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "modcon.f",
+    "original_sha256": "bdaff20b768e81704c584b14638251a54f3504d8e95f91429bfc0817af812c77",
+    "package_sha256": "bdaff20b768e81704c584b14638251a54f3504d8e95f91429bfc0817af812c77",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "newrap1.f",
+    "original_sha256": "c696e218890b463a361c1738b8dd32359d89f4187089077de1678c07d049474b",
+    "package_sha256": "a5331ca5defdd39c4b0af30e6689f144f541a30dea0f43704e0f22f61e762235",
+    "changed": true,
+    "patch_lines": 263
+  },
+  {
+    "file": "objstress.f",
+    "original_sha256": "386a77c185c1be7984b2e6d173be54a944a9294aed54313789a25cf1f59520f8",
+    "package_sha256": "386a77c185c1be7984b2e6d173be54a944a9294aed54313789a25cf1f59520f8",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "restart.f",
+    "original_sha256": "cf38b213b9d07e0e478a4c4ff5a0cdfd0dc141d07c7c0d6d6528d3f302d3b55b",
+    "package_sha256": "cf38b213b9d07e0e478a4c4ff5a0cdfd0dc141d07c7c0d6d6528d3f302d3b55b",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "skyline.f",
+    "original_sha256": "70cfb36c75b1f36810b0a677d20953bc4a0157219afc26f1f4f999f36b932291",
+    "package_sha256": "70cfb36c75b1f36810b0a677d20953bc4a0157219afc26f1f4f999f36b932291",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "solvers.f",
+    "original_sha256": "6e563685c6852aed64704f827902b7321fb540daa9278b333f6fbbe8b25e3845",
+    "package_sha256": "6e563685c6852aed64704f827902b7321fb540daa9278b333f6fbbe8b25e3845",
+    "changed": false,
+    "patch_lines": 0
+  },
+  {
+    "file": "stress.f",
+    "original_sha256": "54b0396ef53426522460d0c23ef4b85847837c9f290ee38bfd877546a4d9e44f",
+    "package_sha256": "54b0396ef53426522460d0c23ef4b85847837c9f290ee38bfd877546a4d9e44f",
+    "changed": false,
+    "patch_lines": 0
+  }
+]

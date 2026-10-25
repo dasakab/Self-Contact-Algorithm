@@ -1,0 +1,288 @@
+--- /mnt/data/cylinder_global_contact_trial/contact2.f	2026-10-25 08:11:49.738007243 +0000
++++ contact2.f	2026-10-25 08:16:54.269444850 +0000
+@@ -2663,6 +2663,16 @@
+      1     S_NCONTACT_IN(DUMMY).LE.SIZE(POSMAP))
+      2     POSMAP(S_NCONTACT_IN(DUMMY))=DUMMY
+       ENDDO
++C     FACET-AWARE SELF SEARCH: ONE NEAREST NONLOCAL FACE PER NODE.
++C     RETAINS LEGACY SEGMENT/CONSTRAINT ASSEMBLY FOR COMPARISON.
++      CALL SELF_FACET_CANDIDATES(SELFCON_NODES_IN,
++     1 S_NCONTACT_IN,XHITTING_IN,YHITTING_IN,
++     2 ZHITTING_IN,THETA_ROW_IN,THETA_CLMN_IN,
++     3 THETA_NODES_IN,S_HNODE_IN,S_TNODE_IN,
++     4 SIZE_HIT_IN,S_HIT_COUNTER_IN,LENGTH,
++     5 INCNUMBER,'IN')
++      RETURN
++
+ 	IF (INCNUMBER .EQ. 1) THEN
+ 	S_HIT_COUNTER_IN = 0
+ C	ELSE
+@@ -2977,6 +2987,16 @@
+      1     S_NCONTACT_OUT(DUMMY).LE.SIZE(POSMAP))
+      2     POSMAP(S_NCONTACT_OUT(DUMMY))=DUMMY
+       ENDDO
++C     FACET-AWARE SELF SEARCH: ONE NEAREST NONLOCAL FACE PER NODE.
++C     RETAINS LEGACY SEGMENT/CONSTRAINT ASSEMBLY FOR COMPARISON.
++      CALL SELF_FACET_CANDIDATES(SELFCON_NODES_OUT,
++     1 S_NCONTACT_OUT,XHITTING_OUT,YHITTING_OUT,
++     2 ZHITTING_OUT,THETA_ROW_OUT,THETA_CLMN_OUT,
++     3 THETA_NODES_OUT,S_HNODE_OUT,S_TNODE_OUT,
++     4 SIZE_HIT_OUT,S_HIT_COUNTER_OUT,LENGTH,
++     5 INCNUMBER,'OUT')
++      RETURN
++
+ 	IF (INCNUMBER .EQ. 1)THEN
+ 	S_HIT_COUNTER_OUT = 0
+ C	ELSE
+@@ -3772,100 +3792,13 @@
+ 	
+ C	SUBROUTINE TO FIND CONTACT POINT ON SEGMENT
+ 
+-	SUBROUTINE C_POINT(XC,YC,ZC,XH,YH,ZH,ZI,ET)
+-
+-	IMPLICIT NONE
+-	
+-	INTEGER K1,ITR
+-	
+-	REAL*8 ZI,ET
+-	REAL*8 X,Y,Z
+-	REAL*8 XH,YH,ZH
+-	REAL*8 DXDZI,DYDZI,DZDZI
+-	REAL*8 DXDET,DYDET,DZDET
+-	REAL*8 DXDZIDET,DYDZIDET,DZDZIDET
+-	REAL*8 F,G
+-	REAL*8 DFDZI,DGDZI
+-	REAL*8 DFDET,DGDET
+-	REAL*8 HH,KK
+-
+-	REAL*8 XC(4),YC(4),ZC(4)
+-	REAL*8 DN(4),DNDZI(4),DNDET(4),DNDZIDET(4)
+-
+-	ZI = 0.0
+-	ET = 0.0
+-C	WRITE(*,*)'INSIDE C POINT'
+-	
+-	ITR =0
+-	
+-100	ITR = ITR +1
+-
+-	CALL CONTACTN(DN,DNDZI,DNDET,DNDZIDET,ZI,ET)
+-	
+-	X = 0.0
+-	Y = 0.0
+-	Z = 0.0
+-	
+-	DO K1 = 1,4
+-	  X = X + XC(K1)*DN(K1)
+-	  Y = Y + YC(K1)*DN(K1)
+-	  Z = Z + ZC(K1)*DN(K1)
+-	ENDDO
+-
+-	DXDZI = 0.0
+-	DXDET = 0.0
+-	DYDZI = 0.0
+-	DYDET = 0.0
+-	DZDZI = 0.0
+-	DZDET = 0.0
+-	
+-	DO K1 = 1,4
+-	  DXDZI = DXDZI + XC(K1)*DNDZI(K1)
+-	  DXDET = DXDET + XC(K1)*DNDET(K1)
+-	  DYDZI = DYDZI + YC(K1)*DNDZI(K1)
+-	  DYDET = DYDET + YC(K1)*DNDET(K1)
+-	  DZDZI = DZDZI + ZC(K1)*DNDZI(K1)
+-	  DZDET = DZDET + ZC(K1)*DNDET(K1)
+-	ENDDO
+-C	WRITE(*,*)'C POINT 2'
+- 	DXDZIDET = 0.0	
+- 	DYDZIDET = 0.0	
+- 	DZDZIDET = 0.0	
+-	
+-	DO K1 = 1,4
+-	  DXDZIDET = DXDZIDET + XC(K1)*DNDZIDET(K1)
+-	  DYDZIDET = DYDZIDET + YC(K1)*DNDZIDET(K1)
+-	  DZDZIDET = DZDZIDET + ZC(K1)*DNDZIDET(K1)
+-	ENDDO
+-
+-	F = DXDZI*(X-XH) + DYDZI*(Y-YH) + DZDZI*(Z-ZH)
+-	
+-	G = DXDET*(X-XH) + DYDET*(Y-YH) + DZDET*(Z-ZH)
+-	
+-	DFDZI = DXDZI**2 + DYDZI**2 +DZDZI**2
+-
+-	DFDET = DXDZIDET*DXDET + DYDZIDET*DYDET + DZDZIDET*DZDET
+-	
+-	DGDZI = DXDZIDET*DXDZI + DYDZIDET*DYDZI + DZDZIDET*DZDZI
+-	
+-	DGDET = DXDET**2 + DYDET**2 +DZDET**2
+-
+-	KK = (-F*DGDZI+G*DFDZI)/(DFDET*DGDZI - DGDET*DFDZI)
+-
+-	HH = (-F-KK*DFDET)/DFDZI
+-
+-	IF((HH .LT. 0.0001) .AND. (KK .LT. 0.0001)) THEN
+-	  ZI = ZI + HH
+-	  ET = ET + KK
+-	ELSE
+-	  ZI = ZI + HH
+-	  ET = ET + KK
+-	 
+-	  GOTO 100
+-	ENDIF
+-C	WRITE(*,*)'C POINT 3'
+-	RETURN
+-	END
++      SUBROUTINE C_POINT(XC,YC,ZC,XH,YH,ZH,ZI,ET)
++      IMPLICIT NONE
++      REAL*8 XC(4),YC(4),ZC(4),XH,YH,ZH,ZI,ET
++      REAL*8 DSQ
++      CALL SAFE_QUAD_PROJECT(XC,YC,ZC,XH,YH,ZH,ZI,ET,DSQ)
++      RETURN
++      END
+ 
+ C	SUBROUTINE TO STORE SHAPE FUNCTION AND THEIR
+ C	DERIVATIVES FOR CONTACT FACES
+@@ -5159,89 +5092,60 @@
+ 	ENDIF
+ 	
+ 
+-C	SEARCHING FOR CLOSEST TARGET NODE FOR EACH HITTING NODE
+-
+-C	WRITE(*,*) 'CONTACT COUNTER 90'
+-	IF (ITR .EQ. 1) THEN
+-	  DO I = 1,NCOUNT_A
+-	    DO J = 1,NCOUNT_B
+-	      
+-	      TEMP = (XHITTING(I) - XTGT(J))**2
+-	      TEMP = TEMP + (YHITTING(I) - YTGT(J))**2
+-	      TEMP = TEMP + (ZHITTING(I) - ZTGT(J))**2
+-	      
+-	      IF (J .EQ. 1) THEN
+-	        NDIS = TEMP
+-	        TGT_NODE(I) = 1
+-	      ELSE
+-	        IF (TEMP .LT. NDIS) THEN
+-	          NDIS = TEMP
+-	          TGT_NODE(I) = J
+-	        ENDIF
+-	      ENDIF
+-	    
+-	    ENDDO
+-	  ENDDO
+-	  
+-	ELSE
+-
+-C	WRITE(*,*) 'CONTACT COUNTER 91'
+-	  DO K1 = 1,NCOUNT_A
+-	  
+-	    ND = CSEG(K1)
+-	  
+- 	    DO K2 = 1,4
+-	      XC(K2) = XSEG(K2,ND)
+-	      YC(K2) = YSEG(K2,ND)
+-	      ZC(K2) = ZSEG(K2,ND)
+-	    ENDDO
+-
+-	    XH = XHITTING(K1)
+-	    YH = YHITTING(K1)
+-	    ZH = ZHITTING(K1)
+-	  
+-	    CALL C_POINT(XC,YC,ZC,XH,YH,ZH,ZI,ET)
+-	    
+-	    IF (ABS(ZI) .LE. 1.0001 .AND. ABS(ET) .LE. 1.0001) THEN
+-	      
+-	      TFLAG(K1) = 1
+-	      CZI(K1) = ZI
+-	      CET(K1) = ET
+-C	WRITE(*,*) 'CONTACT COUNTER 92'
+-	      CALL DIR_VECTOR(XC,YC,ZC,PT_N1,PT_N2,PT_N3,ZI,ET)
+-	  
+-	      DO M1 = 1,3
+-	        N1(M1,K1) = PT_N1(M1)
+-	        N2(M1,K1) = PT_N2(M1)
+-	        N3(M1,K1) = PT_N3(M1)
+-	      ENDDO
+-	      
+-	    ELSE
+-	      
+-	      M = CSEG(K1)
+-	      DO K2 = 1,4
+-	        
+-	        J = CONSEG(K2,M)
+-	      
+-	        TEMP = (XHITTING(K1) - XTGT(J-FACTOR))**2
+-	        TEMP = TEMP + (YHITTING(K1) - YTGT(J-FACTOR))**2
+-	        TEMP = TEMP + (ZHITTING(K1) - ZTGT(J-FACTOR))**2
+-	      
+-	        IF (K2 .EQ. 1) THEN
+-	          NDIS = TEMP
+-	          TGT_NODE(K1) = J-FACTOR
+-	        ELSE
+-	          IF (TEMP .LT. NDIS) THEN
+-	            NDIS = TEMP
+-	            TGT_NODE(K1) = J-FACTOR
+-	          ENDIF
+-	        ENDIF
+-	    
+-	      ENDDO
+-	    ENDIF
+-	  ENDDO
+-    
+-	ENDIF
++C     FACET CLOSEST-POINT SEARCH. DO NOT SELECT TARGET VIA VERTEX.
++C     FOR EACH HITTING NODE, TEST ALL ACTIVE CANDIDATE FACES.
++C     IF A HIT IS EXACTLY A VERTEX ON A FACE, SKIP THAT SELF-FACE.
++      DO K1=1,NCOUNT_A
++        TFLAG(K1)=0
++        XH=XHITTING(K1)
++        YH=YHITTING(K1)
++        ZH=ZHITTING(K1)
++        NDIS=HUGE(NDIS)
++        M=0
++        DO ND=1,NSEG
++          IF(NCSEG(ND).EQ.0) CYCLE
++          DO K2=1,4
++            XC(K2)=XSEG(K2,ND)
++            YC(K2)=YSEG(K2,ND)
++            ZC(K2)=ZSEG(K2,ND)
++          ENDDO
++          IF (IDX.NE.0) THEN
++            DO K2=1,4
++              TEMP=(XH-XC(K2))**2+(YH-YC(K2))**2
++     1             +(ZH-ZC(K2))**2
++              IF(TEMP.LT.1.0D-20) EXIT
++            ENDDO
++            IF(K2.LE.4) CYCLE
++          ENDIF
++          CALL SAFE_QUAD_PROJECT(XC,YC,ZC,XH,YH,ZH,
++     1                            ZI,ET,TEMP)
++          IF(TEMP.LT.NDIS) THEN
++            NDIS=TEMP
++            M=ND
++            CZI(K1)=ZI
++            CET(K1)=ET
++          ENDIF
++        ENDDO
++        IF(M.EQ.0) THEN
++          WRITE(*,*) 'FEM_CONTACT_NO_NONLOCAL_TARGET',K1,IDX
++          STOP 97
++        ENDIF
++        CSEG(K1)=M
++        TFLAG(K1)=1
++        DO K2=1,4
++          XC(K2)=XSEG(K2,M)
++          YC(K2)=YSEG(K2,M)
++          ZC(K2)=ZSEG(K2,M)
++        ENDDO
++        ZI=CZI(K1)
++        ET=CET(K1)
++        CALL DIR_VECTOR(XC,YC,ZC,PT_N1,PT_N2,PT_N3,ZI,ET)
++        DO M1=1,3
++          N1(M1,K1)=PT_N1(M1)
++          N2(M1,K1)=PT_N2(M1)
++          N3(M1,K1)=PT_N3(M1)
++        ENDDO
++      ENDDO
+ 
+ C	SEARCHING FOR THE TARGET SEGMENT AND CZI AND ETA
+ 

@@ -1,0 +1,24 @@
+Algorithm1 — Windows MSYS2 UCRT64 quick start
+
+1. Extract ZIP to its own folder (not inside Algorithm2).
+2. Open MSYS2 UCRT64. Navigate, e.g.:
+   cd /c/Users/Admin/Downloads/thesis/Algorithm1_BucketSelfContact_Cylinder_T0
+3. Install if missing:
+   pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gcc-fortran mingw-w64-ucrt-x86_64-superlu mingw-w64-ucrt-x86_64-python
+4. Build:
+   bash scripts/build_windows_ucrt64.sh
+5. Start from genuine t=0 (NOT increment 35):
+   bash scripts/run_from_zero_ucrt64.sh
+6. Separate terminal for live dashboard:
+   bash START_LIVE_DASHBOARD.sh
+   Open http://localhost:8765/monitor.html in browser.
+7. Export available ParaView VTU/PVD and GIF:
+   pacman -S --needed mingw-w64-ucrt-x86_64-python-matplotlib mingw-w64-ucrt-x86_64-python-pillow
+   bash EXPORT_PARAVIEW_GIF.sh
+8. ParaView: open PARAVIEW_EXPORT/cylinder_timesteps.pvd and click Apply.
+9. View per-increment result sentences:
+   bash MAKE_INCREMENT_REPORT.sh
+
+Do not trust unverified penetrated folds, abnormal stresses or incomplete
+self-contact restart fields for design purposes. Original self-contact
+attributed to Sarma; obtain permission before public GitHub upload.

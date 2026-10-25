@@ -1,0 +1,522 @@
+
+	
+C	SUBROUTINE TO FIND EQIVALENT STRESS	
+
+	 SUBROUTINE EQSTRS(STRCM,SIGEQ)
+
+C***	EQUIVALENT STRESS ROUTINE
+C***	INDEPENDENT
+
+C$RANGE ON
+C$CHECK_OVERFLOW INTEGER ON
+
+	IMPLICIT NONE
+
+	INTEGER I1
+	REAL*8 STRCM(6,1),SIGEQ
+
+	REAL*8 HSTRS
+
+C***	3D 8 NODED ISOPARAMETRIC ELEMENT
+
+
+	    HSTRS=(STRCM(1,1)+STRCM(2,1)+STRCM(3,1))/3.0
+	    SIGEQ=0.0
+	    DO I1=1,3
+	      SIGEQ=SIGEQ+(STRCM(I1,1)-HSTRS)**2.0
+	    ENDDO
+	    DO I1=4,6
+	      SIGEQ=SIGEQ+2.0*(STRCM(I1,1)**2.0)
+	    ENDDO
+	    SIGEQ=(3.0*SIGEQ/2.0)**0.5
+
+	RETURN
+	END
+C   .............................................................
+
+	SUBROUTINE EQSTRN(STNCM,EPSEQ)
+
+C***	EQUIVALENT STRAIN ROUTINE 
+C***	INDEPENDENT
+
+C$RANGE ON
+C$CHECK_OVERFLOW INTEGER ON
+
+	IMPLICIT NONE
+
+	INTEGER I1
+	REAL*8 STNCM(6,1),EPSEQ
+
+C***	3D 8 NODED ISOPARAMETRIC ELEMENT
+
+	    EPSEQ=0.0
+	    DO I1=1,3
+	      EPSEQ=EPSEQ+(STNCM(I1,1)**2.0)
+	    ENDDO
+	    DO I1=4,6
+	      EPSEQ=EPSEQ+2.0*(STNCM(I1,1)**2.0)
+	    ENDDO
+	    EPSEQ=(2.0*EPSEQ/3.0)**0.5
+
+
+	RETURN
+	END
+	
+C	..........................................................
+
+	SUBROUTINE C_ELASTIC_PRIME(YMC,PR,CE)
+	
+	
+	IMPLICIT NONE
+
+	INTEGER K1,K2
+
+	REAL*8 YMC,PR
+	REAL*8 DUMMY
+	REAL*8 CE(6,6)
+
+	DUMMY = YMC/(1.0+PR)
+
+	DO K1 =1,6
+	  DO K2 =1,6
+	    CE(K1,K2) = 0.0
+	  ENDDO
+        ENDDO
+
+	CE(1,1) = (1.0-PR)/(1.0-2.0*PR)
+	CE(2,2) = (1.0-PR)/(1.0-2.0*PR)
+	CE(3,3) = (1.0-PR)/(1.0-2.0*PR)
+	
+	CE(4,4) = 1.0
+	CE(5,5) = 1.0
+	CE(6,6) = 1.0
+	
+	CE(1,2) = PR/(1.0-2.0*PR)
+	CE(1,3) = PR/(1.0-2.0*PR)
+	CE(2,1) = PR/(1.0-2.0*PR)
+	CE(2,3) = PR/(1.0-2.0*PR)
+	CE(3,1) = PR/(1.0-2.0*PR)
+	CE(3,2) = PR/(1.0-2.0*PR)
+
+	DO K1 =1,6
+	  DO K2 =1,6
+	    CE(K1,K2) = DUMMY*CE(K1,K2)
+          ENDDO
+        ENDDO
+
+	RETURN
+	END
+
+
+C	ELASTOPLASTIC MATRIX
+
+	SUBROUTINE C_EPLASTIC_PRIME(CSTRESS_C,EQUIPSTRAIN,EXPO,PRO,YMC,PR,
+     1	CEP,A1,HARDENA,CE)
+
+	
+	IMPLICIT NONE
+
+	INTEGER K1,K2,I,I1
+
+	REAL*8 YMC,PR,EXPO,PRO
+	REAL*8 EQUIPSTRAIN,HARDENA 
+	
+	REAL*8 CSTRESS_C(6)
+	
+	REAL*8 CEP(6,6),CE(6,6),A(6,1),A1(6,1),ATRAN(1,6)
+        
+	REAL*8 DUMMY1(6,1),DUMMY2(6,6),DUMMY3(1,6),DUMMYD(6,6)
+	REAL*8 DUMMYN
+	
+	REAL*8 ATSPC(1,6),AATSPC(6,6),CAATC(6,6)
+	
+	REAL*8 SCALAR
+
+	CALL C_ELASTIC_PRIME(YMC,PR,CE)
+
+	CALL FLOWVECTOR_A(CSTRESS_C,A)
+
+
+	HARDENA =PRO*EXPO*(EQUIPSTRAIN)**(EXPO-1.0)
+	
+	CALL TRANS(A,ATRAN,6,1)
+	
+	CALL MATMUL(ATRAN,CE,ATSPC,1,6,6)
+	
+	CALL MATMUL(A,ATSPC,AATSPC,6,1,6)
+	
+	CALL MATMUL(CE,AATSPC,CAATC,6,6,6)
+	
+	SCALAR=0.0
+	
+	DOI1=1,6
+	
+	SCALAR=SCALAR+ATSPC(1,I1)*A(I1,1)
+	
+	ENDDO
+	
+	SCALAR=SCALAR+HARDENA
+
+	DO K1 = 1,6
+	  DO K2 = 1,6
+	    
+	    CEP(K1,K2)=CE(K1,K2)-CAATC(K1,K2)/SCALAR
+
+	  ENDDO
+	ENDDO
+	
+	DOI=1,6
+	
+	A1(I,1)=A(I,1)
+	
+	ENDDO
+	
+	RETURN
+	END
+
+
+
+
+
+         SUBROUTINE OBJECTIVE_STRESS2(XC,YC,ZC,CSTRESS_E,
+     1    EQ_PSTRAIN_E,
+     1     DELTA_UE,SIGYD,STRESSTDT,NODE,NSTATE,YMC,
+     1     PR,EXPO,PRO,NELE,ENODE,EDOF,NPEFI,NG,K1,ITR,INCNUMBER,
+     1		DELTA_EQUI_PE_OBJ_E)
+
+COUT : STRESSTDT i.e CAUCHY STRESS VALUE IN FIXED FRAME AT TIME t+dt
+C1234567
+C$RANGE ON
+C$CHECK_OVERFLOW INTEGER ON
+
+C	FINDS STRESS AND STRAIN COMPONENTS
+
+
+	IMPLICIT NONE
+
+	INTEGER NELE,ENODE,EDOF,SIGPT,NG
+	INTEGER NSTATE(NG*NG*NG),NODE(ENODE,NELE),TEMP
+	INTEGER NCHANGE(NG*NG*NG)
+	REAL*8 XC(ENODE),YC(ENODE),ZC(ENODE)
+	REAL*8 CSTRESS_E(NG*NG*NG,6)
+	REAL*8 EQ_PSTRAIN_E(NG*NG*NG)
+	REAL*8 DELTA_UE(EDOF)
+	REAL*8 COORD(ENODE,3),STRESSTDT(NG*NG*NG,6),SIGYD(NG*NG*NG)
+	REAL*8 CCOORD(ENODE,3)
+
+	INTEGER I,J,I1,I2,I3,I4,I5,I6,INDEX,COUNT,NPEFI,IEFIS,II,JJ
+
+	REAL*8 STNCM(6,1),NDERV(3,ENODE),CDERV(3,ENODE),
+     1	     CELAS(6,6),CEPLA(6,6),EPSTN(6,1),
+     2	     SIGE1,SIGE2,EPSE1,DEPSE,DETEJAC,
+     3	     CSTRV(6,1),DISCM(ENODE,3),DET_FMATX,
+     4	     DEPSP(6,1), NSTRN(6,1),JMATX(3,3),
+     5	     JINVR(3,3),AVECT(6,1)
+	REAL*8 FMATX(3,3),RMATX(3,3),
+     1	          RTRAN(3,3),UDIAG(3,3),
+     2	          UGLOB(3,3),QMATX(3,3),
+     3	          QTRAN(3,3),SIGMT(3,3),
+     4	          SIGAT(3,3),SIGDT(3,3),
+     5	          SIG2T(3,3),EMATX(3,3),
+     6	          ETRAN(3,3),LEFTM(3,3)
+	REAL*8 SIGDV(6,1),DSIGV(6,1),SIGAV(6,1)
+	REAL*8 RATIO(NG*NG*NG),DI,HSTRS,DPROD,ZERO
+	REAL*8 INITS,ZERO1,ZERO2
+	REAL*8 GP(NG),W(NG)
+	REAL*8 YMC,PR,EXPO,PRO,FRACTION
+	REAL*8 E,Z,SI
+	REAL*8 DETJAC,A(6,1),HARDENA
+	REAL*8 NDERVT(ENODE,3),CDERVT(ENODE,3),FFMATX(3,3)
+	
+	INTEGER K1,ITR,ELASPLAS,M9,INCNUMBER
+	
+	
+	REAL*8 SIGEQ2
+	REAL*8 DELTA_EQUI_PE_OBJ_E(NG*NG*NG)
+	
+
+	
+		
+	CALL GLWR(W,GP,NG)
+
+	  	      
+	DO I=1,ENODE
+	  
+	   COORD(I,1)= XC(I)
+	   COORD(I,2)= YC(I)
+	   COORD(I,3)= ZC(I)
+	   
+	ENDDO
+	
+        CALL C_ELASTIC_PRIME(YMC,PR,CELAS)
+
+	INDEX=0.0
+	
+	EPSE1=0.0
+	
+	DO I=1,ENODE
+           DO J=1,3
+	  
+	    DISCM(I,J)= DELTA_UE(J+INDEX)
+	    
+	  ENDDO
+	   INDEX =INDEX +3
+	ENDDO
+	
+	
+	SIGPT=0
+
+
+C 	GO OVER ALL THE GAUSS POINT .......
+	
+	DO I1=1,NG
+	  DO I2=1,NG
+	    DO I3=1,NG
+	    
+	    
+	    
+	      SIGPT=SIGPT+1
+	      	      
+	      RATIO(SIGPT)=0.0
+	 
+	 E = GP(I1)
+	 Z = GP(I2)
+	 SI= GP(I3)
+	 
+
+C	FORM DEFORMATION GRADIENT MATRIX ------->F[]
+
+	  CALL DERVN(E,Z,SI,NDERV,EDOF,ENODE)
+	  
+	  CALL TRANS(NDERV,NDERVT,3,ENODE)
+	  
+	  CALL JACOBI(XC,YC,ZC,E,Z,SI,JMATX,EDOF,ENODE)
+	  
+	  
+	  
+
+C12345
+		
+	DETJAC= JMATX(1,1)*(JMATX(2,2)*JMATX(3,3)
+     1     -JMATX(2,3)*JMATX(3,2))-JMATX(1,2)*(JMATX(2,1)*JMATX(3,3)
+     1     -JMATX(2,3)*JMATX(3,1))+JMATX(1,3)*(JMATX(2,1)*JMATX(3,2)
+     1     -JMATX(3,1)*JMATX(2,2))
+	 
+	 IF(DETJAC.LE.0.0) THEN
+	 WRITE(*,*) DETJAC
+	 WRITE(*,*) ' ERROR IN COMPUTING JACOBIAN.HENCE TERMINATING..'
+		 WRITE(*,*) ' I AM IN OBJSTRESS.F'
+	 STOP
+	 
+	 ELSE
+	 
+
+	  DI=1.0/DETJAC
+	  
+	  
+	  JINVR(1,1)=+DI*(JMATX(2,2)*JMATX(3,3)-JMATX(3,2)*JMATX(2,3))
+	  JINVR(1,2)=-DI*(JMATX(1,2)*JMATX(3,3)-JMATX(3,2)*JMATX(1,3))
+	  JINVR(1,3)=+DI*(JMATX(1,2)*JMATX(2,3)-JMATX(2,2)*JMATX(1,3))
+	  JINVR(2,1)=-DI*(JMATX(2,1)*JMATX(3,3)-JMATX(3,1)*JMATX(2,3))
+	  JINVR(2,2)=+DI*(JMATX(1,1)*JMATX(3,3)-JMATX(3,1)*JMATX(1,3))
+	  JINVR(2,3)=-DI*(JMATX(1,1)*JMATX(2,3)-JMATX(2,1)*JMATX(1,3))
+	  JINVR(3,1)=+DI*(JMATX(2,1)*JMATX(3,2)-JMATX(3,1)*JMATX(2,2))
+	  JINVR(3,2)=-DI*(JMATX(1,1)*JMATX(3,2)-JMATX(3,1)*JMATX(1,2))
+	  JINVR(3,3)=+DI*(JMATX(1,1)*JMATX(2,2)-JMATX(2,1)*JMATX(1,2))
+	  
+	 ENDIF 
+		
+
+	    
+          CALL MATMUL(NDERVT,JINVR,CDERVT,ENODE,3,3)
+          
+	    
+             DO I4=1,3
+		DO I5=1,3
+		  FMATX(I4,I5)=0.0
+		  DO I6=1,ENODE
+		  FMATX(I4,I5)=FMATX(I4,I5)+CDERVT(I6,I5)*DISCM(I6,I4)
+		  ENDDO
+	        ENDDO
+	      ENDDO
+ 	      
+  	      DO I4=1,3
+ 	           FMATX(I4,I4)=1.0 + FMATX(I4,I4)
+    	      ENDDO
+    	      
+   	      
+C***	CHECK IF FMATX IS NON-SINGULAR (AND MAPPING IS PERFECT)
+C12345	
+	DET_FMATX= FMATX(1,1)*(FMATX(2,2)*FMATX(3,3)-
+     1    FMATX(2,3)*FMATX(3,2))-FMATX(1,2)*(FMATX(2,1)*FMATX(3,3)
+     1    -FMATX(2,3)*FMATX(3,1))+FMATX(1,3)*(FMATX(2,1)
+     1    *FMATX(3,2)-FMATX(3,1)*FMATX(2,2))
+	
+           
+           
+           IF(DET_FMATX.LE.0.0) THEN
+	       WRITE(*,*) ' ERROR IN COMPUTING F MATRIX.
+     1	       HENCE TERMINATING..ELEMENT=',K1
+	       WRITE(*,*)'DET FMATX =',DET_FMATX
+	       WRITE(*,*)'DET JAC =',DETJAC
+	       STOP
+	   ENDIF
+	
+C***	CALL POLAR DECOMPOSITION SUBROUTINE 
+
+	      
+	      CALL POLARD(FMATX,RMATX,UDIAG,UGLOB,QMATX)
+	      
+C***	FORM LOGARITHMIC STRAIN COMPONENTS
+
+	      DO I4=1,3
+	        STNCM(I4,1)=LOG(UDIAG(I4,I4))
+	      ENDDO
+	      
+	      DO I4=4,6
+		STNCM(I4,1)=0.0
+	      ENDDO
+	      
+	      	      
+C***	TRANSFORM SIGMT() ALONG PRINCIPAL STRETCH DIRECTIONS
+C***     STRESS SIGMA AT T IN FIXED FRAME
+
+	      SIGMT(1,1)=CSTRESS_E(SIGPT,1)
+	      SIGMT(2,2)=CSTRESS_E(SIGPT,2)
+	      SIGMT(3,3)=CSTRESS_E(SIGPT,3)
+	      SIGMT(1,2)=CSTRESS_E(SIGPT,4)
+	      SIGMT(1,3)=CSTRESS_E(SIGPT,6)
+	      SIGMT(2,3)=CSTRESS_E(SIGPT,5)
+	      SIGMT(2,1)=SIGMT(1,2)
+	      SIGMT(3,1)=SIGMT(1,3)
+	      SIGMT(3,2)=SIGMT(2,3)
+	      
+	      CALL TRANS(QMATX,QTRAN,3,3)
+	      
+	      CALL MATMUL(QMATX,SIGMT,LEFTM,3,3,3)
+	      
+	      CALL MATMUL(LEFTM,QTRAN,SIGDT,3,3,3)
+
+	      CALL TRANS(RMATX,RTRAN,3,3)
+
+	      CALL MATMUL(RMATX,QTRAN,EMATX,3,3,3)
+
+	      CALL TRANS(EMATX,ETRAN,3,3)
+
+	      
+C	STRESS IN THE MATERIAL COORDINATE
+
+	      SIGDV(1,1)=SIGDT(1,1)
+	      SIGDV(2,1)=SIGDT(2,2)
+	      SIGDV(3,1)=SIGDT(3,3)
+	      SIGDV(4,1)=SIGDT(1,2)
+	      SIGDV(5,1)=SIGDT(2,3)
+	      SIGDV(6,1)=SIGDT(3,1)
+	      
+	      CALL EQSTRS(SIGDV,SIGE1)
+	      
+	      EPSE1=EQ_PSTRAIN_E(SIGPT)
+
+C*******CHECK FOR UNLOADING OF A POINT IN PLASTIC ZONE******
+	      
+	      IF(NSTATE(SIGPT) .EQ. 3)THEN
+	      	  CALL STUCK(SIGDV,STNCM,SIGE1,DPROD)
+	      	  IF(DPROD .LE. 0.0)THEN
+	      	      NSTATE(SIGPT)=1
+	      	      IF(SIGE1 .GT. SIGYD(SIGPT))THEN
+	      	          SIGYD(SIGPT)=SIGE1
+	      	      ENDIF
+	      	      RATIO(SIGPT)=0.0
+	      	  ENDIF
+	      ENDIF
+
+C*******CHECK FOR TRANSITION OF A POINT FROM ELASTIC TO PLASTIC ZONE******
+
+              IF(NSTATE(SIGPT) .EQ. 1)THEN
+                   CALL MATMUL(CELAS,STNCM,DSIGV,6,6,1)
+                   DO I4=1,6
+                      SIGAV(I4,1)=SIGDV(I4,1)+DSIGV(I4,1)
+                   ENDDO
+                   CALL EQSTRS(SIGAV,SIGE2)
+                   IF(SIGE2 .GT. SIGYD(SIGPT))THEN
+                        NSTATE(SIGPT)=2
+                        RATIO(SIGPT)=(SIGE2-SIGYD(SIGPT))/
+     1                                  (SIGE2-SIGE1)
+                        DO I4=1,6
+                           SIGAV(I4,1)=SIGDV(I4,1)+
+     1    		     (1.0-RATIO(SIGPT))*DSIGV(I4,1)
+                 	ENDDO
+                   ENDIF
+              ENDIF
+    
+              IF(NSTATE(SIGPT) .EQ. 2)THEN
+                  FRACTION=0.01
+                  DO I4=1,6
+                    DEPSP(I4,1)=FRACTION*RATIO(SIGPT)*STNCM(I4,1)
+                  ENDDO
+                  CALL MATMUL(CELAS,DEPSP,DSIGV,6,6,1)
+                  DO I4=1,6
+                     SIGAV(I4,1)=SIGAV(I4,1)+DSIGV(I4,1)
+                  ENDDO
+                  CALL EQUI_INC_PSTRAIN(DEPSP,DEPSE)
+                  EPSE1=EPSE1+DEPSE
+                  DO I4=1,6
+                     STNCM(I4,1)=(1.0-FRACTION)*RATIO(SIGPT)*
+     1                      STNCM(I4,1)/NPEFI
+                  ENDDO
+               ENDIF
+               IF(NSTATE(SIGPT) .EQ. 3)THEN
+                    DO I4=1,6
+                       STNCM(I4,1)=STNCM(I4,1)/NPEFI
+                       SIGAV(I4,1)=SIGDV(I4,1)
+                    ENDDO
+               ENDIF
+               IF(NSTATE(SIGPT) .NE. 1)THEN
+                  DO M9=1,NPEFI
+                     CALL C_EPLASTIC(SIGAV,EPSE1,EXPO,PRO,YMC,
+     1                        PR,CEPLA,A,HARDENA,CELAS)
+                     CALL MATMUL(CEPLA,STNCM,DSIGV,6,6,1)
+                     DO I4=1,6
+                        SIGAV(I4,1)=SIGAV(I4,1)+DSIGV(I4,1)
+                     ENDDO
+                     CALL INC_PSTRAIN(A,STNCM,CELAS,HARDENA,DEPSP)
+                     CALL EQUI_INC_PSTRAIN(DEPSP,DEPSE)
+                     EPSE1=EPSE1+DEPSE
+                   ENDDO 
+                   NSTATE(SIGPT)=3
+                ENDIF                   
+    
+		EQ_PSTRAIN_E(SIGPT)=EPSE1
+		    
+C***	TRANSFORM BACK TO THE GLOBAL COORDINATE SYSTEM
+			
+	      SIGAT(1,1)=SIGAV(1,1)	
+	      SIGAT(2,2)=SIGAV(2,1)	
+	      SIGAT(3,3)=SIGAV(3,1)	
+	      SIGAT(1,2)=SIGAV(4,1)	
+	      SIGAT(1,3)=SIGAV(6,1)	
+	      SIGAT(2,3)=SIGAV(5,1)	
+	      SIGAT(2,1)=SIGAT(1,2)	
+	      SIGAT(3,1)=SIGAT(1,3)	
+	      SIGAT(3,2)=SIGAT(2,3)
+	      
+	      CALL MATMUL(EMATX,SIGAT,LEFTM,3,3,3)
+	      CALL MATMUL(LEFTM,ETRAN,SIG2T,3,3,3)
+
+	      STRESSTDT(SIGPT,1)=SIG2T(1,1)
+	      STRESSTDT(SIGPT,2)=SIG2T(2,2)
+	      STRESSTDT(SIGPT,3)=SIG2T(3,3)
+	      STRESSTDT(SIGPT,4)=SIG2T(1,2)
+	      STRESSTDT(SIGPT,5)=SIG2T(2,3)
+	      STRESSTDT(SIGPT,6)=SIG2T(3,1)
+	      
+
+	  ENDDO
+	  ENDDO
+	  ENDDO
+		
+	RETURN
+	END
+
+
+	

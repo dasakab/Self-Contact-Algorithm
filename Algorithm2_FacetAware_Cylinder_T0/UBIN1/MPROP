@@ -1,0 +1,7 @@
+ /Material property table for body A
+ /YM        PR    Expo    Coeff     Y_Stress   F-stress      density
+6.9E10	0.31	0.16	6.50E8	3.4E8		8.0E8		2700
+10E12	0.31  0.26	7.6E10	17.25E10	18.00E10	7200
+ /Material property table for body B
+ /YM        PR    Expo    Coeff    Y_stress   F-Stress       density
+10E12	0.31  0.26	7.6E10	17.25E10	18.00E10	7200

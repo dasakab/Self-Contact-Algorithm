@@ -1,0 +1,1 @@
+The example results are archived historical trial data, not a validation of this particular distribution or a controlled A/B run. The default fresh launcher ignores all examples and never imports an increment-35 checkpoint.

@@ -1,0 +1,234 @@
+C     TRIANGULATED SPACE PARTITION IS NOT REQUIRED FOR THIS SMALL TEST.
+C     SCANS EACH NONLOCAL QUADRILATERAL FACE AND USES ITS TRUE
+C     PROJECTED DISTANCE, NOT THE DISTANCE TO ITS FOUR VERTICES.
+      SUBROUTINE SELF_FACET_CANDIDATES(NS,IDS,X,Y,Z,NR,NC,GRID,
+     1 HNODE,TNODE,NH,ACTIVE,RADIUS,INCNUMBER,NAME)
+      IMPLICIT NONE
+      INTEGER NS,NR,NC,NH,ACTIVE,INCNUMBER
+      INTEGER IDS(NS),GRID(NR,NC),HNODE(NS),TNODE(NS)
+      REAL*8 X(NS),Y(NS),Z(NS),RADIUS
+      CHARACTER*(*) NAME
+      INTEGER MAP(MAXVAL(IDS))
+      INTEGER I,J,R,C,Q,K,HR,HC,TR,TC,TID,HP,NP,VID(4)
+      INTEGER I1,I2,I3,I4,RBEST,CBEST
+      REAL*8 XC(4),YC(4),ZC(4),ZI,ET,D2,BEST,DX,DY,DZ
+      REAL*8 D2VERT,MINVERT,XR,YR,ZR
+      REAL*8 HNR(3),TNR(3),UR(3),VR(3),U(3),V(3)
+      REAL*8 NORMH,NORMT,DPANG,GAP,FN(4),FX(4),FY(4),FT(4)
+      REAL*8 XP(3)
+      NH=0
+      ACTIVE=0
+      HNODE=0
+      TNODE=0
+      MAP=0
+      DO I=1,NS
+        IF(IDS(I).GE.1.AND.IDS(I).LE.SIZE(MAP))
+     1    MAP(IDS(I))=I
+      ENDDO
+      DO HC=1,NC
+        DO HR=1,NR
+          TID=GRID(HR,HC)
+          IF(TID.LE.0.OR.TID.GT.SIZE(MAP)) CYCLE
+          HP=MAP(TID)
+          IF(HP.EQ.0) CYCLE
+          XR=X(HP)
+          YR=Y(HP)
+          ZR=Z(HP)
+          BEST=HUGE(BEST)
+          NP=0
+          RBEST=0
+          CBEST=0
+C         COMPUTE HITTING VERTEX NORMAL FROM NEIGHBOR GRID TANGENTS.
+          I1=GRID(MAX(1,HR-1),HC)
+          I2=GRID(MIN(NR,HR+1),HC)
+          I=HC-1
+          IF(I.LT.1) I=NC
+          J=HC+1
+          IF(J.GT.NC) J=1
+          I3=GRID(HR,I)
+          I4=GRID(HR,J)
+          IF(MINVAL((/I1,I2,I3,I4/)).LE.0) CYCLE
+          IF(MAXVAL((/I1,I2,I3,I4/)).GT.SIZE(MAP)) CYCLE
+          IF(MINVAL((/MAP(I1),MAP(I2),MAP(I3),
+     1                MAP(I4)/)).LE.0) CYCLE
+          UR(1)=X(MAP(I2))-X(MAP(I1))
+          UR(2)=Y(MAP(I2))-Y(MAP(I1))
+          UR(3)=Z(MAP(I2))-Z(MAP(I1))
+          VR(1)=X(MAP(I4))-X(MAP(I3))
+          VR(2)=Y(MAP(I4))-Y(MAP(I3))
+          VR(3)=Z(MAP(I4))-Z(MAP(I3))
+          HNR(1)=UR(2)*VR(3)-UR(3)*VR(2)
+          HNR(2)=UR(3)*VR(1)-UR(1)*VR(3)
+          HNR(3)=UR(1)*VR(2)-UR(2)*VR(1)
+          NORMH=SQRT(SUM(HNR*HNR))
+          IF(NORMH.LT.1D-15) CYCLE
+          DO C=1,NC
+            TC=C+1
+            IF(TC.GT.NC) TC=1
+            DO R=1,NR-1
+C             EXCLUDE CONNECTED/NEAR-NEIGHBOR GRID FACETS.
+              I=ABS(HC-C)
+              J=ABS(HC-TC)
+              I=MIN(I,NC-I)
+              J=MIN(J,NC-J)
+C             SEPARATE MATERIAL NEIGHBOURS BY AT LEAST 6 ROWS.
+C             A NEIGHBOURING FOLD MAY BE SPATIALLY CLOSE BUT NOT
+C             A SELF-CONTACT CANDIDATE IF CONNECTED IN THE MESH.
+              IF(HR.LT.R+7) CYCLE
+              VID(1)=GRID(R,C)
+              VID(2)=GRID(R,TC)
+              VID(3)=GRID(R+1,TC)
+              VID(4)=GRID(R+1,C)
+              DO K=1,4
+                IF(VID(K).LE.0.OR.VID(K).GT.SIZE(MAP)) EXIT
+                Q=MAP(VID(K))
+                IF(Q.EQ.0) EXIT
+                XC(K)=X(Q)
+                YC(K)=Y(Q)
+                ZC(K)=Z(Q)
+              ENDDO
+              IF(K.LE.4) CYCLE
+C             OPPOSING-FACING-NORMAL TEST: DIFFERENT SURFACE PATCH.
+              U(1)=XC(2)-XC(1)
+              U(2)=YC(2)-YC(1)
+              U(3)=ZC(2)-ZC(1)
+              V(1)=XC(4)-XC(1)
+              V(2)=YC(4)-YC(1)
+              V(3)=ZC(4)-ZC(1)
+              TNR(1)=U(2)*V(3)-U(3)*V(2)
+              TNR(2)=U(3)*V(1)-U(1)*V(3)
+              TNR(3)=U(1)*V(2)-U(2)*V(1)
+              NORMT=SQRT(SUM(TNR*TNR))
+              IF(NORMT.LT.1D-15) CYCLE
+C             THE HIT NORMAL IS (AXIAL X CIRCUMFERENTIAL),
+C             WHILE FACE ORDER IS (CIRCUMFERENTIAL X AXIAL).
+C             THEY HAVE OPPOSITE REFERENCE ORIENTATION.
+              DPANG=-DOT_PRODUCT(HNR,TNR)/(NORMH*NORMT)
+              IF(DPANG.GT.-0.2D0) CYCLE
+C             EXPANDED FACET BBOX - SAFELY FINDS INTERIOR HITS.
+              IF(XR.LT.MINVAL(XC)-RADIUS.OR.
+     1           XR.GT.MAXVAL(XC)+RADIUS) CYCLE
+              IF(YR.LT.MINVAL(YC)-RADIUS.OR.
+     1           YR.GT.MAXVAL(YC)+RADIUS) CYCLE
+              IF(ZR.LT.MINVAL(ZC)-RADIUS.OR.
+     1           ZR.GT.MAXVAL(ZC)+RADIUS) CYCLE
+              CALL SAFE_QUAD_PROJECT(XC,YC,ZC,XR,YR,ZR,
+     1                               ZI,ET,D2)
+              IF(D2.LT.BEST.AND.D2.LE.RADIUS*RADIUS) THEN
+                CALL CONTACTN(FN,FX,FY,FT,ZI,ET)
+                XP=0D0
+                DO K=1,4
+                  XP(1)=XP(1)+FN(K)*XC(K)
+                  XP(2)=XP(2)+FN(K)*YC(K)
+                  XP(3)=XP(3)+FN(K)*ZC(K)
+                ENDDO
+                GAP=-((XR-XP(1))*TNR(1)
+     1             +(YR-XP(2))*TNR(2)
+     2             +(ZR-XP(3))*TNR(3))/NORMT
+C               THE OUTER SURFACE HAS OPPOSITE MATERIAL NORMAL.
+                IF(NAME.EQ.'OUT') GAP=-GAP
+C               UNILATERAL SCREEN: DO NOT CONSTRAIN OPEN GAPS.
+                IF(GAP.GT.5D-4) CYCLE
+C               TARGET NODE IS CLOSEST CORNER OF CLOSEST FACE.
+                MINVERT=HUGE(MINVERT)
+                DO K=1,4
+                  D2VERT=(XR-XC(K))**2+(YR-YC(K))**2
+     1                       +(ZR-ZC(K))**2
+                  IF(D2VERT.LT.MINVERT) THEN
+                    MINVERT=D2VERT
+                    NP=VID(K)
+                  ENDIF
+                ENDDO
+                BEST=D2
+                RBEST=R
+                CBEST=C
+              ENDIF
+            ENDDO
+          ENDDO
+          IF(NP.GT.0) THEN
+            NH=NH+1
+            IF(NH.GT.NS) STOP 92
+            HNODE(NH)=TID
+            TNODE(NH)=NP
+            IF(NH.LE.35) WRITE(*,*) 
+     1         'FACET_PAIR',NAME,HR,HC,RBEST,CBEST,
+     2         TID,NP,SQRT(BEST),GAP
+          ENDIF
+        ENDDO
+      ENDDO
+      IF(NH.GT.0) ACTIVE=1
+      WRITE(*,*) 'FACET_CANDIDATES',NAME,INCNUMBER,NH
+      RETURN
+      END
+
+C     BOUNDED GAUSS-NEWTON PROJECTION ONTO A BILINEAR QUAD.
+C     MINIMISE SQUARED DISTANCE, WITH BACKTRACK AND CLAMP TO FACE.
+C     NEVER ACCEPT A LARGE NEGATIVE CORRECTION AS CONVERGED.
+      SUBROUTINE SAFE_QUAD_PROJECT(XC,YC,ZC,XH,YH,ZH,
+     1 ZI,ET,D2)
+      IMPLICIT NONE
+      REAL*8 XC(4),YC(4),ZC(4),XH,YH,ZH,ZI,ET,D2
+      REAL*8 V(3,4),H(3),P(3),A(3),B(3),T(4)
+      REAL*8 N(4),DX(4),DY(4),G1,G2,H11,H12,H22,DET
+      REAL*8 S1,S2,SZ,SE,TRIAL,STEP,DP(3),RES(3)
+      INTEGER I,J,K,IT
+      DO I=1,4
+        V(1,I)=XC(I)
+        V(2,I)=YC(I)
+        V(3,I)=ZC(I)
+      ENDDO
+      H(1)=XH
+      H(2)=YH
+      H(3)=ZH
+      ZI=0D0
+      ET=0D0
+      D2=HUGE(D2)
+      DO IT=1,30
+        CALL CONTACTN(N,DX,DY,T,ZI,ET)
+        P=0D0
+        A=0D0
+        B=0D0
+        DO I=1,4
+          P=P+N(I)*V(:,I)
+          A=A+DX(I)*V(:,I)
+          B=B+DY(I)*V(:,I)
+        ENDDO
+        RES=P-H
+        D2=SUM(RES*RES)
+        G1=DOT_PRODUCT(A,RES)
+        G2=DOT_PRODUCT(B,RES)
+        H11=DOT_PRODUCT(A,A)
+        H12=DOT_PRODUCT(A,B)
+        H22=DOT_PRODUCT(B,B)
+        DET=H11*H22-H12*H12
+        IF(DET.LE.1D-28) EXIT
+        SZ=(-G1*H22+G2*H12)/DET
+        SE=(-G2*H11+G1*H12)/DET
+        IF(MAX(ABS(SZ),ABS(SE)).LT.1D-10) EXIT
+        STEP=1D0
+        DO K=1,14
+          S1=MAX(-1D0,MIN(1D0,ZI+STEP*SZ))
+          S2=MAX(-1D0,MIN(1D0,ET+STEP*SE))
+          CALL CONTACTN(N,DX,DY,T,S1,S2)
+          DP=0D0
+          DO J=1,4
+            DP=DP+N(J)*V(:,J)
+          ENDDO
+          TRIAL=SUM((DP-H)*(DP-H))
+          IF(TRIAL.LE.D2) EXIT
+          STEP=STEP*0.5D0
+        ENDDO
+        IF(TRIAL.GT.D2) EXIT
+        IF(MAX(ABS(S1-ZI),ABS(S2-ET)).LT.1D-11) EXIT
+        ZI=S1
+        ET=S2
+        D2=TRIAL
+      ENDDO
+      CALL CONTACTN(N,DX,DY,T,ZI,ET)
+      DP=0D0
+      DO J=1,4
+        DP=DP+N(J)*V(:,J)
+      ENDDO
+      D2=SUM((DP-H)*(DP-H))
+      RETURN
+      END

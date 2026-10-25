@@ -1,0 +1,26 @@
+Algorithm2 - Windows UCRT64: EXACT COMMANDS
+
+Extract ZIP to a NEW directory. Open an MSYS2 UCRT64 terminal in the project root.
+
+1  pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gcc-fortran mingw-w64-ucrt-x86_64-superlu mingw-w64-ucrt-x86_64-python
+2  bash scripts/build_windows_ucrt64.sh
+3  bash scripts/run_from_zero_ucrt64.sh
+
+IN A SECOND UCRT64 TERMINAL:
+4  bash START_LIVE_DASHBOARD.sh
+5  Browser: http://localhost:8765/monitor.html
+
+POST-PROCESSING (after some accepted increments are written):
+6  pacman -S --needed mingw-w64-ucrt-x86_64-python-matplotlib mingw-w64-ucrt-x86_64-python-pillow
+7  bash EXPORT_PARAVIEW_GIF.sh
+8  Open PARAVIEW_EXPORT/cylinder_timesteps.pvd in ParaView -> Apply
+9  Apply Slice: origin (0,0,22), normal (0,1,0); Surface With Edges; Play
+
+SIMPLE STATUS:
+10 bash MAKE_INCREMENT_REPORT.sh
+
+The default run is from TIME ZERO, not increment 35.
+Do not run the old package's run_windows_ucrt64.sh which imports checkpoint 35.
+All prior results are moved to run_backups/ automatically.
+
+Contact still experimental. No guarantee of a fully nonpenetrating result.

@@ -1,0 +1,10 @@
+ /Contact faces and contact elements for target body
+/Cface(1,k1) = contact face   Cface(2,k1) = contact element
+2      3
+2      4 
+2      7 
+2      8  
+
+
+
+
