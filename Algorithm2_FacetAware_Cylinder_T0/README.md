@@ -12,9 +12,7 @@ of all folds has **not** been established.
 
 ## Quick start — Windows 11, MSYS2 UCRT64
 
-1. Unzip the whole package into a **NEW** folder, e.g.
-   `C:\Users\Admin\Downloads\thesis\Algorithm2_FacetAware_Cylinder_T0`.
-   Do not merge it into the old `cylinder_250_second_ring` folder.
+1. Download whole folder.
 2. Open **MSYS2 UCRT64** (the prompt must display `UCRT64`).
 3. If needed, install the compiler, C compiler, SuperLU and Python:
 
