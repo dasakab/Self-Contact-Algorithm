@@ -4,7 +4,7 @@
 
 This repository contains two related Fortran finite-element solver variants for deforming-cylinder impact calculations. Both use a C/SuperLU sparse linear-solver backend, Newton iterations, adaptive time stepping, and scripts for run monitoring and ParaView export.
 
-> **Research status:** These are experimental numerical solvers, **not validated production contact codes**. Successful Newton convergence does not guarantee a non-penetrating solution, correct stress values, or complete cylinder collapse.
+
 
 ## 1. Algorithms
 
